@@ -28,7 +28,7 @@ batch_size = 128
 epochs = 15
 
 # =============================================================================
-# DATA LOADING
+# DATA LOADING - Now using grayscale to focus on shape features
 # =============================================================================
 
 images = []
@@ -40,10 +40,14 @@ watershed_folders = [folder for folder in sorted(all_folders)
                      if os.path.isdir(os.path.join(data_path, folder))
                      and not folder.startswith('.')]
 
+# Debug print to verify YK is included
+print(f"Detected classes: {watershed_folders}")
+
 for class_idx, watershed_folder in enumerate(watershed_folders):
     folder_path = os.path.join(data_path, watershed_folder)
     class_names.append(watershed_folder)
 
+    image_count = 0
     for image_file in os.listdir(folder_path):
         if image_file.lower().endswith('.jpg'):
             img_path = os.path.join(folder_path, image_file)
@@ -55,9 +59,13 @@ for class_idx, watershed_folder in enumerate(watershed_folders):
 
                 images.append(img_array)
                 labels.append(class_idx)
+                image_count += 1
 
             except Exception as e:
+                print(f"Error loading {img_path}: {e}")
                 continue
+
+    print(f"Loaded {image_count} images from class '{watershed_folder}'")
 
 # =============================================================================
 # DATA PREPARATION
@@ -65,6 +73,9 @@ for class_idx, watershed_folder in enumerate(watershed_folders):
 
 x_data = np.array(images)
 y_data = np.array(labels)
+
+print(f"Total images loaded: {len(x_data)}")
+print(f"Class distribution: {np.bincount(y_data)}")
 
 x_train, x_test, y_train, y_test = train_test_split(
     x_data, y_data,
@@ -78,8 +89,12 @@ num_classes = len(class_names)
 y_train_categorical = keras.utils.to_categorical(y_train, num_classes)
 y_test_categorical = keras.utils.to_categorical(y_test, num_classes)
 
+print(f"Number of classes: {num_classes}")
+print(f"Training samples: {len(x_train)}")
+print(f"Test samples: {len(x_test)}")
+
 # =============================================================================
-# MODEL ARCHITECTURE
+# MODEL ARCHITECTURE - Enhanced for 3 classes
 # =============================================================================
 
 model = keras.Sequential([
@@ -87,14 +102,27 @@ model = keras.Sequential([
 
     # Convolutional Block 1
     layers.Conv2D(filters=32, kernel_size=(3, 3), activation="relu"),
+    layers.BatchNormalization(),
     layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.25),
 
     # Convolutional Block 2
     layers.Conv2D(filters=64, kernel_size=(3, 3), activation="relu"),
+    layers.BatchNormalization(),
     layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.25),
+
+    # Convolutional Block 3 - Added for better feature extraction
+    layers.Conv2D(filters=128, kernel_size=(3, 3), activation="relu"),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.25),
 
     # Classification Block
     layers.Flatten(),
+    layers.Dense(128, activation="relu"),
+    layers.BatchNormalization(),
+    layers.Dropout(0.5),
     layers.Dense(num_classes, activation="softmax")
 ])
 
@@ -108,11 +136,18 @@ model.compile(
     metrics=["accuracy"]
 )
 
+# Add callbacks for better training
+callbacks = [
+    keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True),
+    keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=3)
+]
+
 history = model.fit(
     x_train, y_train_categorical,
     batch_size=batch_size,
     epochs=epochs,
-    validation_split=0.1
+    validation_split=0.1,
+    callbacks=callbacks
 )
 
 # =============================================================================
@@ -159,7 +194,7 @@ true_classes = np.argmax(y_test_categorical, axis=1)
 
 cm = confusion_matrix(true_classes, predicted_classes)
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(10, 8))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             xticklabels=class_names, yticklabels=class_names,
             cbar_kws={'label': 'Number of Otoliths'})
@@ -167,34 +202,68 @@ plt.title('Confusion Matrix: Otolith Classification Results',
           fontsize=14, fontweight='bold')
 plt.xlabel('Predicted Watershed')
 plt.ylabel('True Watershed')
+plt.xticks(rotation=45)
+plt.yticks(rotation=0)
+plt.tight_layout()
 plt.show()
 
 # Classification report
 report = classification_report(true_classes, predicted_classes,
                                target_names=class_names, digits=3)
+print("\nClassification Report:")
+print("=" * 60)
 print(report)
+
+# Per-class accuracy
+class_accuracies = cm.diagonal() / cm.sum(axis=1)
+print("\nPer-class Accuracies:")
+print("=" * 30)
+for i, class_name in enumerate(class_names):
+    print(f"{class_name}: {class_accuracies[i]:.3f}")
 
 # Confidence analysis
 prediction_confidence = np.max(test_predictions, axis=1)
 
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(12, 8))
+
+# Overall confidence distribution
+plt.subplot(2, 2, 1)
 plt.hist(prediction_confidence, bins=20, alpha=0.7,
          color='skyblue', edgecolor='black')
 plt.axvline(np.mean(prediction_confidence), color='red', linestyle='--',
             label=f'Average: {np.mean(prediction_confidence):.1%}')
-plt.title('Distribution of Prediction Confidence',
-          fontsize=14, fontweight='bold')
+plt.title('Overall Prediction Confidence')
 plt.xlabel('Confidence (Maximum Probability)')
 plt.ylabel('Number of Predictions')
 plt.legend()
 plt.grid(True, alpha=0.3)
+
+# Confidence by class
+for i, class_name in enumerate(class_names):
+    class_mask = true_classes == i
+    class_confidence = prediction_confidence[class_mask]
+
+    plt.subplot(2, 2, i+2)
+    plt.hist(class_confidence, bins=15, alpha=0.7, edgecolor='black')
+    plt.axvline(np.mean(class_confidence), color='red', linestyle='--',
+                label=f'Avg: {np.mean(class_confidence):.1%}')
+    plt.title(f'Confidence: {class_name}')
+    plt.xlabel('Confidence')
+    plt.ylabel('Count')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
 plt.show()
 
 # =============================================================================
 # RESULTS SUMMARY
 # =============================================================================
 
-print(f"Model Architecture: CNN with 2 convolutional blocks")
+print("\n" + "=" * 60)
+print("MODEL PERFORMANCE SUMMARY")
+print("=" * 60)
+print(f"Model Architecture: Enhanced CNN with 3 convolutional blocks")
 print(f"Training samples: {len(x_train)}")
 print(f"Test samples: {len(x_test)}")
 print(f"Number of classes: {num_classes}")
@@ -202,8 +271,21 @@ print(f"Class names: {class_names}")
 print(f"Final test accuracy: {test_accuracy:.3f}")
 print(f"Average prediction confidence: {np.mean(prediction_confidence):.3f}")
 
+# Class balance check
+print(f"\nClass distribution in training set:")
+train_class_counts = np.bincount(y_train)
+for i, (class_name, count) in enumerate(zip(class_names, train_class_counts)):
+    percentage = count / len(y_train) * 100
+    print(f"  {class_name}: {count} samples ({percentage:.1f}%)")
+
 # =============================================================================
 # MODEL SAVING
 # =============================================================================
 
-model.save("otolith_classifier_model_CLEAN.h5")
+model_filename = "otolith_classifier_3class_model.h5"
+model.save(model_filename)
+print(f"\nModel saved as: {model_filename}")
+
+# Save class names for future use
+np.save("class_names.npy", np.array(class_names))
+print("Class names saved as: class_names.npy")

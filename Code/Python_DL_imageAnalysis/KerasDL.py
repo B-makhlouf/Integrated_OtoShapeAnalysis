@@ -18,6 +18,7 @@ import tensorflow as tf                 # TensorFlow main library
 from tensorflow import keras            # Main deep learning framework
 from tensorflow.keras import layers     # Neural network building blocks
 import matplotlib.pyplot as plt        # For plotting and visualizing images
+from tensorflow.keras.callbacks import EarlyStopping
 
 # Libraries for loading and organizing image files
 import os                                           # For file system navigation
@@ -92,7 +93,8 @@ for class_idx, watershed_folder in enumerate(watershed_folders):
 
             try:
                 # Load and resize image to standard size
-                img = load_img(img_path, target_size=(img_height, img_width))
+                img = load_img(img_path, target_size=(
+                    img_height, img_width), color_mode='grayscale')
 
                 # Convert image to numerical array
                 img_array = img_to_array(img)
@@ -171,7 +173,7 @@ print(f"✓ Training set: {x_train.shape[0]} images")
 print(f"✓ Test set: {x_test.shape[0]} images")
 
 # Define input shape for the CNN model
-input_shape = (128, 128, 3)  # Height, Width, Channels (RGB)
+input_shape = (128, 128, 1)  # Height, Width, Channels (BW)
 print(f"\n✓ Input shape for CNN: {input_shape}")
 
 # Convert labels to categorical
@@ -195,7 +197,6 @@ print("="*50)
 model = keras.Sequential([
 
     # INPUT LAYER
-    # Tells the model what size images to expect: 128x128 pixels with 3 color channels
     keras.Input(shape=input_shape),
 
     # =============================================================================
@@ -203,57 +204,46 @@ model = keras.Sequential([
     # =============================================================================
 
     # CONVOLUTIONAL LAYER 1
-    # Think of this as teaching the computer to recognize basic shapes and edges
     layers.Conv2D(
-        filters=32,           # Creates 32 different "feature detectors"
-        kernel_size=(3, 3),   # Each detector looks at 3x3 pixel areas
-        activation="relu"     # ReLU = "if negative, make it 0; if positive, keep it"
+        filters=32,
+        kernel_size=(3, 3),
+        activation="relu"
     ),
-    # What this does: Finds basic features like curves, edges, lines in otoliths
 
     # MAX POOLING LAYER 1
-    # Think of this as "zooming out" - reduces image size while keeping important info
     layers.MaxPooling2D(pool_size=(2, 2)),
-    # What this does: Takes each 2x2 area and keeps only the strongest signal
-    # Reduces image from 128x128 to 64x64 pixels
 
     # =============================================================================
     # CNN BLOCK 2: COMPLEX FEATURE DETECTION
     # =============================================================================
 
     # CONVOLUTIONAL LAYER 2
-    # Now looks for more complex patterns using the basic features from layer 1
     layers.Conv2D(
-        filters=64,           # Creates 64 different "complex feature detectors"
-        # Still looks at 3x3 areas, but now of processed features
+        filters=64,
         kernel_size=(3, 3),
         activation="relu"
     ),
-    # What this does: Combines basic features to recognize otolith-specific shapes
 
     # MAX POOLING LAYER 2
-    # Another "zoom out" step
     layers.MaxPooling2D(pool_size=(2, 2)),
-    # What this does: Reduces image from 64x64 to 32x32 pixels
-    # Now we have 64 feature maps, each 32x32 pixels
 
     # =============================================================================
-    # DENSE BLOCK: CLASSIFICATION DECISION
+    # DENSE BLOCK: CLASSIFICATION DECISION WITH DROPOUT
     # =============================================================================
 
     # FLATTEN LAYER
-    # Converts the 2D feature maps into a 1D list of numbers
     layers.Flatten(),
-    # What this does: Takes 64 feature maps (32x32 each) = 65,536 numbers
-    # Arranges them in a single long list for the final decision layer
+
+    # ADD DROPOUT LAYER - THIS IS THE KEY CHANGE!
+    # Dropout randomly "turns off" 50% of neurons during training
+    # This prevents the model from memorizing and forces it to learn general patterns
+    layers.Dropout(0.5),
 
     # DENSE (FULLY CONNECTED) LAYER
-    # This is the "decision maker" - looks at all features and decides: KK or NK?
     layers.Dense(
-        num_classes,          # 2 outputs: one for KK probability, one for NK probability
-        activation="softmax"  # Softmax ensures the two probabilities add up to 100%
+        num_classes,
+        activation="softmax"
     ),
-    # What this does: Outputs something like [0.85, 0.15] meaning 85% confident it's KK
 ])
 
 print("✓ CNN model built successfully!")
@@ -396,12 +386,21 @@ print("   - Accuracy increasing (correctly classifying more otoliths)")
 print("   - Validation metrics staying close to training metrics")
 print("\n⏱️  Training starting now...\n")
 
+# Set up early stopping
+early_stopping = EarlyStopping(
+    monitor='val_loss',
+    patience=3,
+    restore_best_weights=True,
+    verbose=1
+)
+
 # Train the model
 history = model.fit(
     x_train, y_train_categorical,    # Training data: images and watershed labels
     batch_size=batch_size,           # Process 128 images at a time
     epochs=epochs,                   # Go through all data 15 times
-    validation_split=0.1             # Use 10% of data for validation during training
+    validation_split=0.1,            # Use 10% of data for validation during training
+    callbacks=[early_stopping]      # ADD THIS LINE
 )
 
 print(f"\n" + "="*50)
@@ -708,4 +707,3 @@ model.save(model_save_path)
 print(f"✓ Model saved as: {model_save_path}")
 print(
     f"💡 Load later with: model = keras.models.load_model('{model_save_path}')")
-
