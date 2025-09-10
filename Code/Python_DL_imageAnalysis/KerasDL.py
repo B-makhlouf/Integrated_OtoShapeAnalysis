@@ -708,3 +708,4 @@ model.save(model_save_path)
 print(f"✓ Model saved as: {model_save_path}")
 print(
     f"💡 Load later with: model = keras.models.load_model('{model_save_path}')")
+
