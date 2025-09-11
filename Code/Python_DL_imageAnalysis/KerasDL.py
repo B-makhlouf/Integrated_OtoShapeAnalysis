@@ -108,24 +108,37 @@ model = keras.Sequential([
 model.summary()
 
 # =============================================================================
-# TRAIN MODEL
+# TRAIN MODEL (SIMPLIFIED APPROACH)
 # =============================================================================
 
-batch_size = 64
-epochs = 20
+batch_size = 32  # Smaller batch size for stability
+epochs = 30
+
+# Add early stopping
+early_stopping = keras.callbacks.EarlyStopping(
+    monitor='val_loss',
+    patience=5,
+    restore_best_weights=True,
+    verbose=1
+)
 
 model.compile(
     loss="categorical_crossentropy",
-    optimizer="adam",
+    optimizer=keras.optimizers.Adam(
+        learning_rate=0.0005),  # Lower learning rate
     metrics=["accuracy"]
 )
 
-print("Training model...")
+print("Training model with early stopping...")
+
+# Train without data augmentation first to see baseline performance
 history = model.fit(
     x_train, y_train_categorical,
     batch_size=batch_size,
     epochs=epochs,
-    validation_split=0.1
+    validation_split=0.2,
+    callbacks=[early_stopping],
+    verbose=1
 )
 
 final_train_acc = history.history['accuracy'][-1]
