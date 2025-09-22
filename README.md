@@ -22,6 +22,11 @@
             >KK
             >NK
         FISH.csv
+        >REDO
+            >RedoOutlines
+    >oto_outlinesOnly.RData
+    >oto_enriched_final.RData
+    >oto_coeffs.RData
 
 >Docs 
 
