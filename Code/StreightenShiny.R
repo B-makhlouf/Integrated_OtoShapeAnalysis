@@ -78,8 +78,8 @@ ui <- dashboardPage(
                   div(class = "navigation-controls",
                       h4("Directory Navigation"),
                       selectInput("current_directory", "Current Directory:", 
-                                  choices = c("Kusko", "Nush", "Yukon"),
-                                  selected = "Kusko"),
+                                  choices = c("KK", "NK", "YK"),
+                                  selected = "KK"),
                       
                       div(class = "file-progress",
                           textOutput("file_progress"),
@@ -188,8 +188,8 @@ ui <- dashboardPage(
 server <- function(input, output, session) {
   
   # Base directory path
-  base_raw_dir <- "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/Raw Photos"
-  base_straightened_dir <- "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/Straightened Photos"
+  base_raw_dir <- "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/OtoPhotos/Original"
+  base_straightened_dir <- "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/OtoPhotos/OriginalStreight"
   
   # Reactive values to store image data and file navigation
   values <- reactiveValues(

@@ -36,6 +36,12 @@ outlinesonly <- detect.outline(outlinesonly, threshold = 0.1, write.outline.w.or
 
 # At this point, i've deleted all the outlines in the original_with_outlines folder so I can QC the new ones coming in. 
 
+# save as outlines_redo /Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data
+save(outlinesonly, file = "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/oto_outlines_redo.RData")
+
+##################
+###################
+##########################
 
 
 
