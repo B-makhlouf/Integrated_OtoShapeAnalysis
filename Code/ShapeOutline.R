@@ -10,47 +10,36 @@ library(here)
 
 # ok, now lets load those in (so that this script can be used if they're already extracted)
 
-load(here("Data", "oto_outlinesOnly.RData"))
-
-shape <- smoothout(shape, n = 100) # Smoothout 
-
-# remove problematic 
-shape<-remove.outline(shape,"KK","2024_kk_163")
-shape<-remove.outline(shape,"NK","2019_nk_206")
-
-shape<- generateShapeCoefficients(shape) # Generate Shape Coefficients 
-
-#Save the coefficients
-save(shape,file = "C:/Users/makhl/Desktop/Research Repos/Integrated_OtoShapeAnalysis/Data/oto_coefficients.RData")
+# load(here("Data", "oto_outlinesOnly.RData"))
+# 
+# shape <- smoothout(shape, n = 100) # Smoothout 
+# 
+# # remove problematic 
+# shape<-remove.outline(shape,"KK","2024_kk_163")
+# shape<-remove.outline(shape,"NK","2019_nk_206")
+# 
+# shape<- generateShapeCoefficients(shape) # Generate Shape Coefficients 
+# 
+# #Save the coefficients
+# save(shape,file = "C:/Users/makhl/Desktop/Research Repos/Integrated_OtoShapeAnalysis/Data/oto_coefficients.RData")
 
 # Read in 
 load(here("Data", "oto_coefficients.RData"))
 
-shape<- enrich.master.list(shape)
-
-plotWaveletShape(shape, "pop")
-
-
-names(getMasterlist(shape))
-
-# Check the first few rows
-head(getMasterlist(shape))
-
-# Check if "folder" column exists and has values
-table(getMasterlist(shape)$folder, useNA = "always")
-
-
 # Remove .jpg extension from picname column
 shape@master.list.org$picname <- gsub("\\.jpg$", "", shape@master.list.org$picname)
 
-# Check the fix worked
-head(shape@master.list.org$picname)
+#Enrich master list 
+shape<- enrich.master.list(shape)
 
-# Now try enrich.master.list again
-shape <- enrich.master.list(shape)
+# Plot the average 
+plotWaveletShape(shape, "pop")
 
-# Check if it worked
-nrow(getMasterlist(shape))
-head(getMasterlist(shape))
+#Estimate outline reconstruction
+est.list = estimate.outline.reconstruction(shape)
+outline.reconstruction.plot(est.list, max.num.harmonics = 15)
+
+
+
 
 
