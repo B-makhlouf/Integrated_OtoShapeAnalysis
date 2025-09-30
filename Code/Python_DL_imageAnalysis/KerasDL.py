@@ -123,7 +123,8 @@ epochs = 30
 # Add early stopping
 early_stopping = keras.callbacks.EarlyStopping(
     monitor='val_loss',
-    patience=5,
+    patience=3,  # Stop if no improvement for 3 epochs
+    min_delta=0.01,  # Only consider improvements > 0.01 as significant
     restore_best_weights=True,
     verbose=1
 )
@@ -185,7 +186,7 @@ ax2.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig(os.path.join(figures_path, 'training_history.png'),
             dpi=300, bbox_inches='tight')
-plt.show()
+plt.close()
 
 # Test set evaluation
 test_loss, test_accuracy = model.evaluate(
@@ -198,9 +199,12 @@ predicted_classes = np.argmax(test_predictions, axis=1)
 true_classes = np.argmax(y_test_categorical, axis=1)
 
 cm = confusion_matrix(true_classes, predicted_classes)
+cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
 
 plt.figure(figsize=(8, 6))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+annot = np.array([[f'{count}\n({pct:.1f}%)' for count, pct in zip(row_counts, row_pcts)]
+                  for row_counts, row_pcts in zip(cm, cm_percent)])
+sns.heatmap(cm, annot=annot, fmt='', cmap='Blues',
             xticklabels=class_names, yticklabels=class_names,
             cbar_kws={'label': 'Number of Otoliths'})
 plt.title('Confusion Matrix: Otolith Classification Results',
@@ -209,7 +213,7 @@ plt.xlabel('Predicted Watershed')
 plt.ylabel('True Watershed')
 plt.savefig(os.path.join(figures_path, 'confusion_matrix.png'),
             dpi=300, bbox_inches='tight')
-plt.show()
+plt.close()
 
 # Classification report
 print("Classification Report:")
@@ -246,7 +250,7 @@ plt.legend()
 plt.grid(True, alpha=0.3)
 plt.savefig(os.path.join(figures_path, 'prediction_confidence.png'),
             dpi=300, bbox_inches='tight')
-plt.show()
+plt.close()
 
 # Save model
 model_save_path = "otolith_classifier_model.h5"
