@@ -19,7 +19,10 @@ print("✓ All libraries imported successfully!")
 # SETUP
 # =============================================================================
 
-data_path = "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/ForOutlines/Original"
+data_path = "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/OtoPhotos/Original"
+figures_path = "/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Figures/Deep Learning"
+os.makedirs(figures_path, exist_ok=True)
+
 img_height = 128
 img_width = 128
 
@@ -62,6 +65,9 @@ for class_idx, watershed_folder in enumerate(watershed_folders):
 
 print(f"Total images loaded: {len(images)}")
 print(f"Watershed classes: {class_names}")
+
+### Thresholding on the image experiment ###
+
 
 # =============================================================================
 # PREPARE DATA
@@ -177,6 +183,8 @@ ax2.legend()
 ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
+plt.savefig(os.path.join(figures_path, 'training_history.png'),
+            dpi=300, bbox_inches='tight')
 plt.show()
 
 # Test set evaluation
@@ -199,6 +207,8 @@ plt.title('Confusion Matrix: Otolith Classification Results',
           fontsize=14, fontweight='bold')
 plt.xlabel('Predicted Watershed')
 plt.ylabel('True Watershed')
+plt.savefig(os.path.join(figures_path, 'confusion_matrix.png'),
+            dpi=300, bbox_inches='tight')
 plt.show()
 
 # Classification report
@@ -234,6 +244,8 @@ plt.xlabel('Confidence (Maximum Probability)')
 plt.ylabel('Number of Predictions')
 plt.legend()
 plt.grid(True, alpha=0.3)
+plt.savefig(os.path.join(figures_path, 'prediction_confidence.png'),
+            dpi=300, bbox_inches='tight')
 plt.show()
 
 # Save model
