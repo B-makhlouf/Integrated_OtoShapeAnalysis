@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.utils import load_img, img_to_array
 import matplotlib.pyplot as plt
 import os
 from tensorflow.keras.utils import load_img, img_to_array
