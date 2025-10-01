@@ -154,18 +154,26 @@ print(f"Test set: {x_test.shape[0]} images")
 model = keras.Sequential([
     keras.Input(shape=input_shape),
 
-    layers.Conv2D(filters=32, kernel_size=(3, 3), activation="relu"),
-    layers.MaxPooling2D(pool_size=(2, 2)),
+    # Block 1 - Keep larger kernels but single conv
+    layers.Conv2D(32, (5, 5), activation="relu", padding='same'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(filters=64, kernel_size=(3, 3), activation="relu"),
-    layers.MaxPooling2D(pool_size=(2, 2)),
+    # Block 2
+    layers.Conv2D(64, (5, 5), activation="relu", padding='same'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D((2, 2)),
 
-    layers.Conv2D(filters=128, kernel_size=(3, 3), activation="relu"),
-    layers.MaxPooling2D(pool_size=(2, 2)),
+    # Block 3
+    layers.Conv2D(128, (3, 3), activation="relu", padding='same'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D((2, 2)),
 
+    # Simpler dense layers
     layers.Flatten(),
     layers.Dropout(0.5),
     layers.Dense(128, activation="relu"),
+    layers.BatchNormalization(),
     layers.Dropout(0.3),
     layers.Dense(num_classes, activation="softmax"),
 ])

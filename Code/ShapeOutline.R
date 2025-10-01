@@ -250,7 +250,8 @@ cat(paste("- Individual plots saved to:", alignment_output_dir, "\n"))
 plotWaveletShape(shape, "pop")
 
 
-
+# Save the straightened outlines 
+save(shape, file = file.path("/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/aligned_straightened_outlines.RData"))
 ################################################################################
 #### Step 3: Extract "Coo" object format for Momocs use 
 ################################################################################
@@ -343,3 +344,6 @@ boxplot(oto.f, main = "Fourier Coefficients Distribution")
 bot.p <- PCA(oto.f)
 plot(bot.p, main = "PCA of Fourier Coefficients")
 
+
+# save the momocs object
+save(coo_outline, file = file.path("/Users/benjaminmakhlouf/Research_repos/Integrated_OtoShapeAnalysis/Data/aligned_momocs_outlines.RData"))
